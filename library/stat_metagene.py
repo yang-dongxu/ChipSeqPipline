@@ -1,25 +1,30 @@
 import os
 import sys
+from multiprocessing import Pool, Value, process
+from functools import partial
 
 #usage python thisfile.py outputname  refgene.txt datapoints TSS-5' TTS-3' <bw1 bw2 ...>
 
 if len(sys.argv)<6:
-    usage="usage python {} outputname  refgene.txt  datapoints TSS-5' TTS-3' <bw1 bw2 ...>".format(__file__)
+    usage="usage python {}  outputname  refgene.txt  datapoints TSS-5' TTS-3' threads <bw1 bw2 ...>".format(__file__)
     print(usage)
 
 outputname=sys.argv[1]
 refgene=sys.argv[2]
-datapoints=sys.argv[3]
-uper_region=sys.argv[4]
-down_region=sys.argv[5]
+datapoints=int(sys.argv[3])
+uper_region=int(sys.argv[4])
+down_region=int(sys.argv[5])
+processors=int(sys.argv[6])
 
-if len(sys.argv)>=7:
-    inputfiles=sys.argv[6:]
+if len(sys.argv)>=8:
+    inputfiles=sys.argv[7:]
 else:
     names=sys.stdin.read().split()
     inputfiles=[i.strip() for i in names ]
 
 print("input files: {}".format(inputfiles))
+
+
 
 def get_gene_info(refgene):
     f=open(refgene)
@@ -28,91 +33,113 @@ def get_gene_info(refgene):
         lineSplit=line.split()
         gene_id=lineSplit[1]
         chrom_name=lineSplit[2]
-        start_site=lineSplit[4]
-        end_site=lineSplit[5]
+        if lineSplit[3]=="+":
+            start_site=int(lineSplit[4])
+            end_site=int(lineSplit[5])
+        else:
+            start_site=int(lineSplit[5])
+            end_site=int(lineSplit[4])
+        if start_site==end_site:
+            continue
         gene_info[gene_id]=[chrom_name,start_site,end_site]
     f.close()
     print("refGene get!")
     return gene_info
-    
-def get_file_summary(file,gene_info,upper=uper_region,down=down_region,datapoints=datapoints,w=True,outname='meta_gene.stat'):
-    cmd="bigWigSummary {file_name} {chr} {start} {end} {datapoints}"
-    gene_result={}
-    count=0
 
-    f_r=open(outname,'a+')
-
-    for gene_id,info in gene_info.items():
-        count+=1
-        chrom=info[0]
-        tss=info[1]
-        tts=info[2]
-
-        tss_upper=max(0,int(tss)-int(upper))
-        tts_down=tts+down
-
-        cmd1=cmd.format(file_name=file,chr=chrom,datapoints=datapoints,start=tss_upper,end=tss)
-        cmd2=cmd.format(file_name=file,chr=chrom,datapoints=datapoints,start=tss,end=tts)
-        cmd3=cmd.format(file_name=file,chr=chrom,datapoints=datapoints,start=tts,end=tts_down)
-
-        cmds=[cmd1,cmd2,cmd3]
-        result=[]
+def process_bigwigsummary(geneid,file_name,region:tuple,datapoints):
+    chrom=region[0]
+    start=region[1]
+    end=region[2]
+    label=region[3]
+    cmd=f"bigWigSummary {file_name} {chrom} {start} {end} {datapoints}"
+    f=os.popen(cmd)
+    datas=f.read().split()
+    if len(datas)==datapoints:
+        datas=['0' if value =="n/a" else value.strip() for value in datas]
+    else:
+        datas=['0']*datapoints
+    results=[f"{file_name},{geneid},{label},{i},{datas[i].strip()}" for i in range(len(datas))]
+    return "\n".join(results)
 
 
-        for cmd in cmds:
-            f=os.popen(cmd)
-            result.append(f.read().split())
-        gene_result[gene_id]=result
-        if count%1000==0:
-            print("{} {:.2f}% got ".format(file,100*count/len(gene_info)))
-
-            if w:
-                for i in range(3):
-                    for j in range(len(result[i])):
-                        intensity=result[i][j]
-                        if intensity=="n/a":
-                            intensity="0"
-                        line="{file},{geneid},{part},{site},{intensity}\n".format(file=file,geneid=gene_id,part=i,site=j,intensity=intensity)
-                        f_r.write(line)
-    f_r.close()
-
-
-
-    return gene_result
-
-
-def get_all_statis(inputfiles,gene_info,upper=uper_region,down=down_region,datapoints=datapoints,w=True,outname="metagene.stats"):
-    result={}
-    ##result={bwname:{geneid:[[region1],[region2],[region3]]}}
-    for file in inputfiles:
-        file_result=get_file_summary(file,gene_info,upper,down,datapoints,w,outname)
-        result[file]=file_result
-        print("{} summary get!".format(file))
-    return result
-
-def output(file_result,file_name=outputname):
-    f=open(file_name,'a')
-    info="{file},{geneid},{part},{site},{intensity}\n"
-    for file, gene_result in file_result.items():
-        for gene_id,sites_intensity in gene_result.items():
-            for part_id in range(len(sites_intensity)):
-                part=sites_intensity[part_id]
-                for datasite in range(len(part)):
-                    intensity=part[datasite]
-                    if intensity=="n/a":
-                        intensity=="0"
-                    line=info.format(file=file,geneid=gene_id,part=part_id,site=datasite,intensity=intensity)
-                    f.write(line)
-    f.close()
+def merge_files(inputfiles,outname):
+    cmd="cat {} > {} ".format("  ".join(inputfiles),outname)
+    os.system(cmd)
+    rm_tmps=[f"rm -f {i}" for i in inputfiles]
+    for i in rm_tmps:
+        os.system(i)
     return True
 
+
+def process_bigwigsummary(region:tuple,geneid,file_name,datapoints):
+    chrom=region[0]
+    start=region[1]
+    end=region[2]
+    label=region[3]
+    cmd=f"bigWigSummary {file_name} {chrom} {start} {end} {datapoints}"
+    f=os.popen(cmd)
+    datas=f.read().split()
+    if len(datas) == datapoints:
+        datas=['0' if value =='n/a' else value for value in datas]
+    else:
+        datas=['0']*datapoints
+    results=[f"{file_name},{geneid},{label},{i},{datas[i].strip()}" for i in range(len(datas))]
+    return "\n".join(results)
+
+def get_summary_for_file(names:tuple,gene_info,upper=uper_region,down=down_region,datapoints=datapoints):
+    assert len(names)==2
+    file=names[0]
+    outname=names[1]
+    f=open(outname,'w')
+    all_results=[]
+    for geneid,info in gene_info.items():
+        bigwig_for_geneid=partial(process_bigwigsummary,geneid=geneid,file_name=file,datapoints=datapoints)
+        chrom=info[0]
+        if info[1] < info[2]:
+            tss=info[1]
+            tts=info[2]
+
+            tss_upper=max(0,int(tss)-int(upper))
+            tts_down=tts+down
+        else:
+            tss=info[2]
+            tts=info[1]
+
+            tss_upper,tss=tss,tss+upper
+            tts,tts_down=max(0,tts-down),tts
+
+            tss,tts=tts,tss
+
+        regions=[(chrom,tss_upper,tss,"promoter"),(chrom,tss,tts,"gene"),(chrom,tts,tts_down,"downstream")]
+
+        results=[bigwig_for_geneid(i) for i in regions]
+        all_results.append('\n'.join(results))
+    f.write('\n'.join(all_results)+'\n')
+    return outname
+
+
 if __name__=="__main__":
+    POOL=Pool(processors)
     gene_info=get_gene_info(refgene)
-    result=get_all_statis(inputfiles=inputfiles,gene_info=gene_info,w=True,outname=outputname)
-    #complete=output(result,file_name=outputname)
-    #if complete:
-        #print("success!")
+    upper=uper_region
+    down=down_region
+    w=True
+    outname=outputname
+
+    tmp_lens=len(inputfiles)
+
+    get_summ_partial=partial(get_summary_for_file,gene_info=gene_info,upper=uper_region,down=down_region,datapoints=datapoints)
+    outnames=[outname+"."+str(i)+'.tmp' for i in range(tmp_lens)]
+    names=[(inputfiles[i],outnames[i]) for i in range(tmp_lens)]
+    POOL.map(get_summ_partial,names)
+    POOL.close()
+    POOL.join()
+    #[get_summ_partial(i) for i in names]
+    merge_files(outnames,outname)
+
+
     print("success!")
+
 
 
 

@@ -291,18 +291,6 @@ def stats(inputpath,config):
         cmd1="##ERROR! no information about peaks!"
     cmd=cmd1
     
-    if config["stat_metagene"]:
-        #用来统计meta的部分
-        script=os.path.join(os.path.split(os.path.abspath(__file__))[0],"stat_metagene.py")
-        outname=os.path.join(outname_dir,"metagene.stats")
-        refgene=config["refgene"]
-        datapoints=config["datapoints"]
-        tss5=config["TSS-upstream-region"]
-        tts3=config["TTS-downstream-region"]
-        inputfile=" ".join(inputpath.inputpaths)
-        cmd2=f"python {script} {outname} {refgene} {datapoints} {tss5} {tts3} {inputfile}"
-
-        cmd="\n".join([cmd1,cmd2])
 
     log_cmd="echo \"####\t{}\t####\\n\"".format(cmd.replace("\n","  &&  "))
     log_header="echo \"######Start generate stats {}######\\n\"".format(inputpath.project)

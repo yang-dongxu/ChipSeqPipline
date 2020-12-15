@@ -89,7 +89,24 @@ def run(args):
     outname_dir=os.path.join(os.getcwd(),args.outdir,all_configs[parse_input.DEFAULT_CONFIG]["stats"]["outdir"])
     outname=os.path.join(outname_dir,"alignments.stats")
     script_name=os.path.join(os.path.split(DEFAULT_CONFIG)[0],'stat_alignment.py')
-    cmd=f"\n####aligment stats start####\npython {script_name} {log_name} {outname}\n####alignment stats stop####\n"
+    cmd1=f"\n####aligment stats start####\npython {script_name} {log_name} {outname}\n####alignment stats stop####\n"
+    cmd=cmd1
+
+    ###用来统计metagene相关的部分，放在最后
+    if all_configs[parse_input.DEFAULT_CONFIG]["stats"]["stat_metagene"]:
+        script=os.path.join(os.path.split(os.path.abspath(__file__))[0],"stat_metagene.py")
+        outname=os.path.join(outname_dir,"metagene.stats")
+        config=all_configs[parse_input.DEFAULT_CONFIG]["stats"]
+        refgene=config["refgene"]
+        datapoints=config["datapoints"]
+        tss5=config["TSS-upstream-region"]
+        tts3=config["TTS-downstream-region"]
+        threads=config["stat_metagene_threads"]
+        bw_path=os.path.join(os.getcwd(),args.outdir,all_configs[parse_input.DEFAULT_CONFIG]["toBw"]["outdir"])
+        inputfile="du -a {} | grep bw | cut -f 2 |" .format(bw_path)
+        cmd2=f"\n####metagene stats start####\n {inputfile} python {script} {outname} {refgene} {datapoints} {tss5} {tts3} {threads}\n####metagene stats stop####\n"
+        cmd=cmd+cmd2
+
     
     with open(cmd_name,'w') as f:
         sep_bar="\n"+"##########"+"\n"

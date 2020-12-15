@@ -94,6 +94,7 @@
         {
             "need":true,
             "stat_metagene":false,
+            "stat_metagene_threads":10,
             "outdir":"status",
             "chromsize":"/mnt/Storage/home/yangdongxu/DB/chromSize/hg38.chrom.sizes",
             "refgene":"/mnt/Storage/home/yangdongxu/DB/refGene/hg38.refGene.txt",
