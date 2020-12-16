@@ -109,7 +109,7 @@ def run(args):
 
     
     with open(cmd_name,'w') as f:
-        sep_bar="\n"+"##########"+"\n"
+        sep_bar="\n"+"#"*20+"\n"
         f.write(f1+sep_bar+f2+cmd)
     
     if all_configs["bash_run"]:

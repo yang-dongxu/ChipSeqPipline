@@ -1,0 +1,2 @@
+1,a_1.fq.gz,a_2.fq.gz,2,b_1.fq.gz,b_2.fq.gz
+2,b_1.fq.gz,b_2.fq.gz,1,a_1.fq.gz,a_2.fq.gz
