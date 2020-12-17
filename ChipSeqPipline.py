@@ -74,8 +74,8 @@ def run(args):
         config=all_configs[seq.config_id]
         config["generate_cmd"]["cmd_name"]=all_configs["cmd_name"]
         combine_modules(seq,config,args)
-    cmd_name=os.path.join(args.outdir,all_configs["cmd_name"])
-    log_name=os.path.join(args.outdir,all_configs["log_name"])
+    cmd_name=os.path.join(os.path.abspath(args.outdir),all_configs["cmd_name"])
+    log_name=os.path.join(os.path.abspath(args.outdir),args.outdir,all_configs["log_name"])
 
     cmd_1=cmd_name+".part1"
     cmd_2=cmd_name+".part2"
