@@ -37,7 +37,8 @@
                 "q":[true,""],
                 "threads":[true,8],
                 "x":[true,"/mnt/Storage/data/Bowtie/hg38"],
-                "5":[false,0]
+                "5":[false,0],
+                "no-discordant":[true,""]
             },
             "BWA":{
                 "need":false
