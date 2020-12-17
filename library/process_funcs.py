@@ -285,7 +285,7 @@ def stats(inputpath,config):
     script=os.path.join(os.path.split(os.path.abspath(__file__))[0],"stat_peaks.py")
     outname=os.path.join(outname_dir,"peaks.stats")
     if "narrowPeak" in inputpath.paths:
-        inputfile=inputpath.paths["narrowPeak"][0]
+        inputfile=inputpath.paths["narrowPeak"]
         cmd1=f"python {script} {outname} {inputfile}"
     else:
         cmd1="##ERROR! no information about peaks!"

@@ -27,7 +27,8 @@ for p1,body,p2 in all_mapping_results:
     else:
         total_reads=parts[0].split('\n')[0].strip().split()[0]
         uniq_reads=parts[0].split('\n')[3].strip().split()[0]
-        result="{project},{total},{unique}\n".format(project=p1,total=total_reads,unique=uniq_reads)
+        dup_reads=parts[0].split('\n')[4].strip().split()[0]
+        result="{project},{total},{unique},{dup}\n".format(project=p1,total=total_reads,unique=uniq_reads,dup=dup_reads)
         f.write(result)
 
 f.close()

@@ -94,7 +94,7 @@ def run(args):
 
     ###用来统计metagene相关的部分，放在最后
     if all_configs[parse_input.DEFAULT_CONFIG]["stats"]["stat_metagene"]:
-        script=os.path.join(os.path.split(os.path.abspath(__file__))[0],"stat_metagene.py")
+        script=os.path.join(os.path.split(os.path.abspath(__file__))[0],LIBRARY,"stat_metagene.py")
         outname=os.path.join(outname_dir,"metagene.stats")
         config=all_configs[parse_input.DEFAULT_CONFIG]["stats"]
         refgene=config["refgene"]
